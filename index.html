@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mars Rover — Tailwind Demo</title>
+
+  <!-- Tailwind Play CDN (no build step) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- optional Tailwind config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mars: '#ff7a18',
+            slateCustom: '#0b1221'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+  <!-- NAVBAR -->
+  <header class="bg-gradient-to-r from-sky-700 to-indigo-700 p-4 shadow-md">
+    <div class="container mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L15 8H9L12 2Z" fill="currentColor"/>
+          <path d="M4 22L12 13L20 22H4Z" fill="currentColor"/>
+        </svg>
+        <div>
+          <div class="font-bold text-white text-lg">Mars Rover Autonomy</div>
+          <div class="text-xs opacity-80">Prototype • Batch Execution • AI Decision</div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="text-sm opacity-90">Hello, <span id="userNameDisplay" class="font-semibold">Guest</span></div>
+        <input id="nameInput" type="text" placeholder="Enter name" class="px-3 py-1 rounded bg-slate-800 text-slate-100 border border-slate-700 focus:outline-none" />
+        <button id="saveNameBtn" class="px-3 py-1 rounded bg-mars text-black font-semibold">Save</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <main class="container mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Left: Controls -->
+    <section class="md:col-span-2 bg-slate-800 rounded-lg p-5 shadow">
+      <h2 class="text-xl font-semibold mb-3">Controls & Telemetry</h2>
+
+      <!-- Batch Execution -->
+      <div class="mb-4">
+        <h3 class="font-medium mb-2">Batch Command Execution</h3>
+        <textarea id="commands" rows="4" class="w-full p-3 rounded bg-slate-900 border border-slate-700"></textarea>
+        <div class="flex gap-2 mt-2">
+          <button id="execBtn" class="px-4 py-2 rounded bg-indigo-500 font-semibold">Execute</button>
+          <button id="clearCmdBtn" class="px-4 py-2 rounded bg-slate-700">Clear</button>
+        </div>
+        <pre id="commandOutput" class="mt-3 bg-black/40 p-3 rounded text-sm max-h-40 overflow-auto"></pre>
+      </div>
+
+      <!-- Anomaly -->
+      <div class="mb-4">
+        <h3 class="font-medium mb-2">Anomaly Detection</h3>
+        <textarea id="anomalyInput" rows="3" class="w-full p-3 rounded bg-slate-900 border border-slate-700"></textarea>
+        <div class="flex gap-2 mt-2">
+          <button id="anomalyBtn" class="px-4 py-2 rounded bg-rose-500 font-semibold">Detect</button>
+          <button id="anomalySample" class="px-4 py-2 rounded bg-slate-700">Load Sample</button>
+        </div>
+        <pre id="anomalyOutput" class="mt-3 bg-black/40 p-3 rounded text-sm max-h-40 overflow-auto"></pre>
+      </div>
+
+      <!-- Predict -->
+      <div class="mb-4">
+        <h3 class="font-medium mb-2">Predict Action (ML)</h3>
+        <textarea id="predictInput" rows="3" class="w-full p-3 rounded bg-slate-900 border border-slate-700"></textarea>
+        <div class="flex gap-2 mt-2">
+          <button id="predictBtn" class="px-4 py-2 rounded bg-emerald-500 font-semibold">Predict</button>
+          <button id="predictSample" class="px-4 py-2 rounded bg-slate-700">Load Sample</button>
+        </div>
+        <pre id="predictOutput" class="mt-3 bg-black/40 p-3 rounded text-sm max-h-40 overflow-auto"></pre>
+      </div>
+
+      <!-- Train -->
+      <div class="mb-4">
+        <h3 class="font-medium mb-2">Train Model</h3>
+        <button id="trainBtn" class="px-4 py-2 rounded bg-yellow-400 text-black font-semibold">Train on Server</button>
+        <pre id="trainOutput" class="mt-3 bg-black/40 p-3 rounded text-sm max-h-20 overflow-auto"></pre>
+      </div>
+    </section>
+
+    <!-- Right: Logs & Info -->
+    <aside class="bg-slate-800 rounded-lg p-5 shadow">
+      <h3 class="font-semibold mb-2">Recent Logs</h3>
+      <div id="logs" class="space-y-2 text-xs max-h-[65vh] overflow-auto">
+        <div class="text-slate-400">No logs yet — perform actions to see logs here.</div>
+      </div>
+
+      <div class="mt-6 text-xs text-slate-400">
+        <div><strong>API Base:</strong> <span id="apiBase">http://127.0.0.1:5000/rover</span></div>
+        <div class="mt-2">Open <em>index.html</em> in browser. Make sure backend Flask is running.</div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="text-center text-xs text-slate-500 py-4">Prototype — simple Tailwind UI</footer>
+
+  <!-- Script (you can move to script.js if you prefer) -->
+  <script>
+    // BASE API
+    const BASE = "http://127.0.0.1:5000/rover";
+
+    // Elements
+    const nameInput = document.getElementById('nameInput');
+    const saveNameBtn = document.getElementById('saveNameBtn');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+
+    const commandsEl = document.getElementById('commands');
+    const execBtn = document.getElementById('execBtn');
+    const clearCmdBtn = document.getElementById('clearCmdBtn');
+    const commandOutput = document.getElementById('commandOutput');
+
+    const anomalyInput = document.getElementById('anomalyInput');
+    const anomalyBtn = document.getElementById('anomalyBtn');
+    const anomalyOutput = document.getElementById('anomalyOutput');
+    const anomalySample = document.getElementById('anomalySample');
+
+    const predictInput = document.getElementById('predictInput');
+    const predictBtn = document.getElementById('predictBtn');
+    const predictOutput = document.getElementById('predictOutput');
+    const predictSample = document.getElementById('predictSample');
+
+    const trainBtn = document.getElementById('trainBtn');
+    const trainOutput = document.getElementById('trainOutput');
+
+    const logsEl = document.getElementById('logs');
+
+    // Load name from localStorage
+    function loadName() {
+      const n = localStorage.getItem('mr_name') || '';
+      if (n) {
+        userNameDisplay.textContent = n;
+        nameInput.value = n;
+      } else {
+        userNameDisplay.textContent = 'Guest';
+      }
+    }
+    loadName();
+
+    saveNameBtn.addEventListener('click', () => {
+      const v = nameInput.value.trim();
+      if (!v) return alert('Enter a name');
+      localStorage.setItem('mr_name', v);
+      userNameDisplay.textContent = v;
+      addLog('info', Name set to "${v}");
+    });
+
+    // Logging utility
+    function addLog(type, payload) {
+      const el = document.createElement('div');
+      el.className = 'bg-slate-700 p-2 rounded text-xs';
+      el.innerHTML = `<div class="flex justify-between"><div class="font-semibold">${type}</div><div class="opacity-70">${new Date().toLocaleTimeString()}</div></div>
+                      <pre class="whitespace-pre-wrap mt-1">${typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2)}</pre>`;
+      logsEl.prepend(el);
+    }
+
+    // Fetch helpers
+    async function postJson(path, body) {
+      const res = await fetch(BASE + path, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(HTTP ${res.status}: ${txt});
+      }
+      return res.json();
+    }
+
+    // Execute batch
+    execBtn.addEventListener('click', async () => {
+      const commands = commandsEl.value.split('\\n').map(s=>s.trim()).filter(Boolean);
+      if (commands.length === 0) return alert('Add commands first');
+      addLog('exec:start', commands);
+      try {
+        const r = await postJson('/execute', {commands});
+        commandOutput.textContent = JSON.stringify(r, null, 2);
+        addLog('exec:done', r);
+      } catch (e) {
+        commandOutput.textContent = e.message;
+        addLog('error', e.message);
+      }
+    });
+
+    clearCmdBtn.addEventListener('click', () => commandsEl.value = '');
+
+    // Anomaly detect
+    anomalySample.addEventListener('click', () => {
+      anomalyInput.value = JSON.stringify({wheel_status:'stuck', obstacle:true}, null, 2);
+    });
+
+    anomalyBtn.addEventListener('click', async () => {
+      let payload;
+      try {
+        payload = JSON.parse(anomalyInput.value);
+      } catch (e) {
+        return alert('Invalid JSON in anomaly input');
+      }
+      addLog('anomaly:start', payload);
+      try {
+        const r = await postJson('/anomaly', payload);
+        anomalyOutput.textContent = JSON.stringify(r, null, 2);
+        addLog('anomaly:done', r);
+      } catch (e) {
+        anomalyOutput.textContent = e.message;
+        addLog('error', e.message);
+      }
+    });
+
+    // Predict
+    predictSample.addEventListener('click', () => {
+      predictInput.value = JSON.stringify({wheel_status:'ok', obstacle:false, battery:85, terrain_roughness:0.2}, null, 2);
+    });
+
+    predictBtn.addEventListener('click', async () => {
+      let payload;
+      try {
+        payload = JSON.parse(predictInput.value);
+      } catch (e) {
+        return alert('Invalid JSON in predict input');
+      }
+      addLog('predict:start', payload);
+      try {
+        const r = await postJson('/predict', payload);
+        predictOutput.textContent = JSON.stringify(r, null, 2);
+        addLog('predict:done', r);
+      } catch (e) {
+        predictOutput.textContent = e.message;
+        addLog('error', e.message);
+      }
+    });
+
+    // Train
+    trainBtn.addEventListener('click', async () => {
+      addLog('train:start', 'training requested');
+      try {
+        const r = await postJson('/learn', {});
+        trainOutput.textContent = JSON.stringify(r, null, 2);
+        addLog('train:done', r);
+      } catch (e) {
+        trainOutput.textContent = e.message;
+        addLog('error', e.message);
+      }
+    });
+
+    // NOTE: convenience: allow relative calls when served from same origin
+    // If your backend is on different origin, change BASE variable to full URL above.
+    (function adjustBaseForLocal() {
+      const host = document.getElementById('apiBase');
+      host.textContent = BASE;
+    })();
+
+  </script>
+</body>
+</html>
